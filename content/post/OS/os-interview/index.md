@@ -5,6 +5,8 @@ draft: false
 categories: ["操作系统","OS","八股"]
 ---
 
+> 本文基于[JavaGuide操作系统面试总结](https://javaguide.cn/cs-basics/operating-system/operating-system-basic-questions-02.html#%E4%BB%80%E4%B9%88%E6%98%AF%E5%86%85%E5%AD%98%E7%A2%8E%E7%89%87)简化总结, 用于个人记忆
+
 ![操作系统-image-1](images/操作系统-image-1.png)
 
 ## 操作系统基础
