@@ -2,7 +2,8 @@
 title: "操作系统"
 date: 2025-03-03T21:13:31+08:00
 draft: false
-categories: ["操作系统","OS","八股"]
+categories: ["八股"]
+tags: ["操作系统", "OS", "八股"]
 ---
 
 > 本文基于[JavaGuide操作系统面试总结](https://javaguide.cn/cs-basics/operating-system/operating-system-basic-questions-02.html#%E4%BB%80%E4%B9%88%E6%98%AF%E5%86%85%E5%AD%98%E7%A2%8E%E7%89%87)简化总结, 用于个人记忆
