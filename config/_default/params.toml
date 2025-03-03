@@ -65,7 +65,7 @@ card = "summary_large_image"
 [defaultImage.opengraph]
 enabled = true
 local = true
-src = "img/touxiang.png"
+src = "/assets/img/touxiang.png"
 
 [colorScheme]
 toggle = true
