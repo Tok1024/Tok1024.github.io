@@ -8,6 +8,7 @@ license:
 hidden: false
 comments: true
 draft: false
+categories: ["test", "测试"]
 ---
 
 我的*第一个文章*
