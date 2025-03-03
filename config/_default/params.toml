@@ -49,6 +49,11 @@ limit = 10
 
 [[widgets.page]]
 type = "toc"
+title = "本文目录"
+[widgets.page.options]
+  enableToc = true
+  tocPosition = "inner"   # 可选值: inner, outer
+  tocSticky = true        # 固定目录
 
 [opengraph.twitter]
 site = ""
