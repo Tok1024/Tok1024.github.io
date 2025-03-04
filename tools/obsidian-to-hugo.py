@@ -12,6 +12,9 @@ def convert_obsidian_to_hugo(input_file, output_folder, attachment_folder="G:\\m
     input_file: Obsidian Markdown文件路径
     output_folder: 输出文件夹
     attachment_folder: Obsidian附件文件夹
+    
+    示例:
+    python .\tools\obsidian-to-hugo.py "G:\my note\ 快晴\Java\八股\操作系统.md" "C:\cs-learning\draft\os-interview"
     """
     # 创建输出文件夹
     if not os.path.exists(output_folder):
