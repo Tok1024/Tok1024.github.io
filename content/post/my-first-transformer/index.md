@@ -3,6 +3,8 @@ title: "My Transformer"
 date: 2025-03-15T11:31:55+08:00
 draft: false
 math: true
+categories: ["DeepLearning","Transformer"]
+tags: ["深度学习","Transformer", "Self-Attention", "AI","Pytorch"]
 ---
 
 ## Intro
