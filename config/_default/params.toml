@@ -41,7 +41,7 @@ type = "archives"
 type = "tag-cloud"
 
 [widgets.homepage.params]
-limit = 5
+limit = 20
 
 [[widgets.homepage]]
 type = "categories"

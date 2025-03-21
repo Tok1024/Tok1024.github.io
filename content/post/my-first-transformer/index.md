@@ -9,7 +9,7 @@ tags: ["深度学习","Transformer", "Self-Attention", "AI","Pytorch"]
 
 ## Intro
 
-最近在学习深度学习的基础知识, 对于五花八门的模型深感神奇, 大受震撼, 但是觉得实操能力欠佳, 于是尝试实操手搓一个 Transformer, 
+最近在学习深度学习的基础知识, 对于五花八门的模型深感神奇, 大受震撼, 但是觉得实操能力欠佳, 于是尝试实操手搓一个 Transformer
 
 训练一个模型有四个步骤: 数据处理 -> 定义模型 -> 定义损失函数 -> 优化, 我们这次也将按照这个步骤进行, 过程参考 b 站视频 [Pytorch手搓 Transformer](https://www.bilibili.com/video/BV1BbFaeVE4W)
 
