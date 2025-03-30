@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>生成式模型 on Toki 的个人博客</title><link>https://tok1024.com/categories/%E7%94%9F%E6%88%90%E5%BC%8F%E6%A8%A1%E5%9E%8B/</link><description>Recent content in 生成式模型 on Toki 的个人博客</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 30 Mar 2025 11:59:10 +0800</lastBuildDate><atom:link href="https://tok1024.com/categories/%E7%94%9F%E6%88%90%E5%BC%8F%E6%A8%A1%E5%9E%8B/index.xml" rel="self" type="application/rss+xml"/><item><title>Bayesian Ai</title><link>https://tok1024.com/p/bayesian-ai/</link><pubDate>Sun, 30 Mar 2025 11:59:10 +0800</pubDate><guid>https://tok1024.com/p/bayesian-ai/</guid><description>&lt;h1 id="从贝叶斯视角理解-ai">从贝叶斯视角理解 AI
+&lt;/h1>&lt;h2 id="引言-大模型写的作业会雷同吗">引言: 大模型写的作业会雷同吗?
+&lt;/h2>&lt;p>你有没有想过这样一个问题: &lt;em>当你和室友一起把某门水课的大作业题目复制到大模型中时, 他会不会每次都产生完全一模一样的答案&lt;/em> ? 如果不会, 为什么呢?&lt;/p>
+&lt;p>答案当然是不会。下面我将从概率论和贝叶斯视角出发，逐步解释为什么大模型不会生成完全相同的答案，以及为什么这种随机性实际上是一种优势。&lt;/p>
+&lt;h2 id="条件概率与贝叶斯思想">条件概率与贝叶斯思想
+&lt;/h2>&lt;h3 id="贝叶斯公式">贝叶斯公式
+&lt;/h3>&lt;p>首先让我们回顾概率论中的贝叶斯公式:&lt;/p>
+$$P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}$$&lt;p>这个公式看似简单，却蕴含了贝叶斯学派的整个世界观。它不仅是一个计算条件概率的工具，更是一种思考和推理的方式。&lt;/p>
+&lt;h3 id="先验与后验">先验与后验
+&lt;/h3>&lt;p>贝叶斯学派认为: &lt;strong>概率不是客观频率，而是对不确定性的量化表达；学习是一个不断用新证据更新信念的过程&lt;/strong>。简言之，世界上没有绝对确定的事物，我们通过持续观察获取新证据，不断更新对世界的认知。&lt;/p>
+&lt;p>从贝叶斯公式的角度理解，若将 $A$ 视为假设，$B$ 视为观测到的证据，则:&lt;/p>
+&lt;ul>
+&lt;li>$P(A)$ 是&lt;strong>先验概率&lt;/strong> (Prior)：在观测到证据 $B$ 之前，我们对假设 $A$ 成立概率的初始估计&lt;/li>
+&lt;li>$P(A|B)$ 是&lt;strong>后验概率&lt;/strong> (Posterior)：在观测到证据 $B$ 之后，我们对假设 $A$ 成立概率的更新估计&lt;/li>
+&lt;li>$P(B|A)$ 是&lt;strong>似然&lt;/strong> (Likelihood)：假设 $A$ 成立的条件下，观测到证据 $B$ 的概率&lt;/li>
+&lt;li>$P(B)$ 是&lt;strong>边缘概率&lt;/strong> (Marginal Probability)：观测到证据 $B$ 的总体概率&lt;/li>
+&lt;/ul>
+&lt;p>用更直观的表达式:&lt;/p>
+$$P(\text{假设}|\text{证据}) = \frac{P(\text{证据}|\text{假设}) \times P(\text{假设})}{P(\text{证据})}$$&lt;p>即: &lt;strong>后验 = 似然 × 先验 ÷ 证据概率&lt;/strong>&lt;/p>
+&lt;h3 id="频率学派-vs-贝叶斯学派">频率学派 vs. 贝叶斯学派
+&lt;/h3>&lt;p>贝叶斯学派与频率学派在概率解释和统计推断方面存在根本差异:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>频率学派&lt;/th>
+&lt;th>贝叶斯学派&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>概率表示事件的长期频率&lt;/td>
+&lt;td>概率表示信念的主观程度&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>参数是固定但未知的常数&lt;/td>
+&lt;td>参数是具有概率分布的随机变量&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>依赖 $p$ 值和置信区间&lt;/td>
+&lt;td>使用后验分布和可信区间&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>不使用先验信息&lt;/td>
+&lt;td>明确纳入先验信息&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>主要方法：最大似然估计 (MLE)&lt;/td>
+&lt;td>主要方法：最大后验估计 (MAP)、完全后验分布&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="判别式模型">判别式模型
+&lt;/h2>&lt;p>以图像分类为例，模型预测过程涉及三个主体：模型参数 $\theta$、输入数据 $\mathbf{x}$（及其真实标签 $y$）和预测结果 $\hat{y}$。从概率角度看，预测过程就是&lt;strong>在给定输入 $\mathbf{x}$ 的条件下，找出使条件概率 $P(y|\mathbf{x},\theta)$ 最大的类别 $\hat{y}$&lt;/strong>:&lt;/p>
+$$\hat{y} = \arg\max_y P(y|\mathbf{x},\theta)$$&lt;p>关键问题是：如何确定最优的模型参数 $\theta$？这就涉及到不同的参数估计方法。&lt;/p>
+&lt;h3 id="最大似然估计-mle">最大似然估计 (MLE)
+&lt;/h3>&lt;p>频率学派采用最大似然估计，寻找能最大化观测数据概率的参数 (换句话说: 最能解释数据集的参数):&lt;/p>
+$$\theta_{\text{MLE}} = \arg\max_\theta P(D|\theta)$$&lt;p>其中 $D = {(\mathbf{x}&lt;em>i, y_i)}&lt;/em>{i=1}^n$ 是训练数据集。假设数据独立同分布 (i.i.d.)，似然函数可表示为:&lt;/p>
+$$P(D|\theta) = \prod_{i=1}^n P(y_i|\mathbf{x}_i,\theta)$$&lt;p>为便于计算，通常取对数转换乘积为求和:&lt;/p>
+$$\log P(D|\theta) = \sum_{i=1}^n \log P(y_i|\mathbf{x}_i,\theta)$$&lt;p>这正是我们熟悉的交叉熵损失函数的负值。&lt;/p>
+&lt;h3 id="最大后验估计-map">最大后验估计 (MAP)
+&lt;/h3>&lt;p>贝叶斯学派则考虑参数 $\theta$ 的先验分布，采用最大后验估计:&lt;/p>
+$$\theta_{\text{MAP}} = \arg\max_\theta P(\theta|D) = \arg\max_\theta \frac{P(D|\theta)P(\theta)}{P(D)}$$&lt;p>由于 $P(D)$ 对参数优化而言是常数，简化为:&lt;/p>
+$$\theta_{\text{MAP}} = \arg\max_\theta P(D|\theta)P(\theta)$$&lt;p>取对数后:&lt;/p>
+$$\theta_{\text{MAP}} = \arg\max_\theta \left[ \log P(D|\theta) + \log P(\theta) \right]$$&lt;p>可以看出，MAP 比 MLE 多了先验项 $\log P(\theta)$，这实际上起到了正则化作用。例如，当先验为高斯分布 $P(\theta) \sim \mathcal{N}(0, \sigma^2)$ 时，$\log P(\theta)$ 对应于 $L_2$ 正则化；当先验为拉普拉斯分布时，对应于 $L_1$ 正则化。&lt;/p>
+&lt;h3 id="完全贝叶斯推断">完全贝叶斯推断
+&lt;/h3>&lt;p>更进一步，完全贝叶斯推断不仅寻找单一最优参数点，而是&lt;strong>考虑所有可能参数及其概率分布&lt;/strong>:&lt;/p>
+$$P(y|\mathbf{x}, D) = \int P(y|\mathbf{x}, \theta) P(\theta|D) d\theta$$&lt;p>这个积分通常难以解析计算，需要借助变分推断 (Variational Inference) 或马尔可夫链蒙特卡洛 (MCMC) 等近似方法。完全贝叶斯推断的优势在于能够量化预测的不确定性，而不仅仅给出点估计。&lt;/p>
+&lt;h2 id="生成式模型">生成式模型
+&lt;/h2>&lt;p>我们使用的大模型和上文的判别式模型有一个本质区别就是: &lt;strong>判别式模型给定输入 x 的情况下, 输出的 lable 是确定的&lt;/strong>, 但是大模型每次生成文本都有不同之处, 这是因为实际上每次大模型生成的是下一个词语的概率分布, 然后按照某种方式在其中采样, 我们把这种模型叫做&lt;strong>生成式模型&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-1.png"
+width="1388"
+height="733"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-1_hu_cc14b7d08b7e7759.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-1_hu_8b236c2fb61ef3dd.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-1"
+class="gallery-image"
+data-flex-grow="189"
+data-flex-basis="454px"
+>&lt;/p>
+&lt;p>生成式模型特点&lt;/p>
+&lt;ul>
+&lt;li>一个输入多个输出：同一个输入可能对应多种合理的输出结果&lt;/li>
+&lt;li>训练数据中没有确切的解：不像分类任务有唯一正确答案&lt;/li>
+&lt;li>难以预测：输出空间通常非常大且复杂&lt;/li>
+&lt;/ul>
+&lt;p>生成式模型的核心目标是学习数据的分布，而不仅仅是将输入映射到特定输出。这使得它们能够生成新的、多样化的、符合真实数据分布的样本。&lt;/p>
+&lt;h3 id="判别式-vs-生成式">判别式 vs 生成式
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-2.png"
+width="1379"
+height="789"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-2_hu_b0f975d65376da0f.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-2_hu_603ebab5390673c4.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-2"
+class="gallery-image"
+data-flex-grow="174"
+data-flex-basis="419px"
+>&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-3.png"
+width="1360"
+height="746"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-3_hu_9ddcec929cac0dfc.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-3_hu_59a37c7c120a6365.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-3"
+class="gallery-image"
+data-flex-grow="182"
+data-flex-basis="437px"
+>&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>判别式模型: $P(y|x)$ - 给定输入 x，预测标签 y 的概率&lt;/p>
+&lt;ul>
+&lt;li>例如：分类器、回归模型&lt;/li>
+&lt;li>关注决策边界，区分不同类别&lt;/li>
+&lt;li>通常计算效率更高，需要的数据更少&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>生成式模型: $P(x|y)$ 或 $P(x,y)$ 或 $P(x)$, 给定输入标签 y，生成一个最可能符合现实中数据分布的 x&lt;/p>
+&lt;ul>
+&lt;li>学习数据本身的联合分布&lt;/li>
+&lt;li>能够生成新样本&lt;/li>
+&lt;li>通常需要更多参数和训练数据&lt;/li>
+&lt;li>提供更丰富的信息（联合概率分布）&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="概率建模">概率建模
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-4.png"
+width="1403"
+height="745"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-4_hu_b844b71235ccf4e5.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-4_hu_2fc144657aa7cef5.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-4"
+class="gallery-image"
+data-flex-grow="188"
+data-flex-basis="451px"
+>&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>潜在因子（Latent Factors）&lt;/strong>：用 z 表示隐藏变量，如物体的姿势（pose）、光照（lighting）、尺度（scale）等。这些因子本身服从简单分布。&lt;/p>
+&lt;ul>
+&lt;li>潜在空间通常是低维的，具有良好的结构&lt;/li>
+&lt;li>潜在变量捕获了数据生成过程中的关键因素&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>观察值生成&lt;/strong>：观察数据 x（如图像）由 &amp;ldquo;世界模型&amp;rdquo; 渲染生成，而世界模型是关于 z 的函数。最终，观察值 x 会呈现复杂分布。&lt;/p>
+&lt;ul>
+&lt;li>世界模型可以看作是从简单分布到复杂分布的变换&lt;/li>
+&lt;li>深度神经网络可以作为这种变换的强大近似器&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>我们通过深度学习对整个数据的分布进行建模, 使得可以采样出符合真实世界的数据 z, 而这个过程的关键就是概率&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>数学表示&lt;/strong>：&lt;/p>
+&lt;p>&lt;strong>生成模型的核心思想是通过联合分布 P (x, z) 来求解数据的边缘分布 P (x)&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>联合分布：$P(x,z) = P(x|z)P(z)$&lt;/li>
+&lt;li>边缘分布：$P(x) = \int P(x|z)P(z)dz$&lt;/li>
+&lt;li>后验分布：$P(z|x) = \frac{P(x|z)P(z)}{P(x)}$&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-5.png"
+width="1361"
+height="742"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-5_hu_8ba72b7b61144ef8.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-5_hu_4f821e14ea1a60d3.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-5"
+class="gallery-image"
+data-flex-grow="183"
+data-flex-basis="440px"
+>&lt;/p>
+&lt;p>对估计的概率分布和数据的分布进行对比, 作为损失函数。常用的度量方式包括：&lt;/p>
+&lt;ul>
+&lt;li>KL 散度：$D_{KL}(P_{data}||P_{model})$&lt;/li>
+&lt;li>最大似然估计：最大化 $\log P_{model}(x)$&lt;/li>
+&lt;li>Wasserstein 距离：用于 WGAN 等模型&lt;/li>
+&lt;/ul>
+&lt;h2 id="deep-generative-models">Deep Generative Models
+&lt;/h2>&lt;h3 id="表征学习">表征学习
+&lt;/h3>&lt;p>深度学习的核心任务之一是表征学习, 即在原始数据中自动提取对任务有用的特征（即“表示”），而无需人工设计特征。&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-6.png"
+width="1395"
+height="779"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-6_hu_8ccbc38657ffc11c.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-6_hu_a5e2fd975a68e7af.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-6"
+class="gallery-image"
+data-flex-grow="179"
+data-flex-basis="429px"
+>&lt;/p>
+&lt;p>为什么深度学习有用? 因为它的&lt;strong>分层结构&lt;/strong>可以自动学习数据的&lt;strong>层次化表示&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>低层特征：边缘、纹理、简单形状&lt;/li>
+&lt;li>中层特征：部件、组合结构&lt;/li>
+&lt;li>高层特征：语义概念、抽象表示&lt;/li>
+&lt;/ul>
+&lt;p>这种表示学习能力使深度学习模型能够捕获数据中的复杂模式。&lt;/p>
+&lt;h3 id="建模概率分布">建模概率分布
+&lt;/h3>&lt;p>既然深度学习可以通过表征学习去学习数据的信息, 那么他当然也可以学习数据的分布, 一种直观的的方式是, 我们通过模型的学习把简单分布建模为复杂分布&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-7.png"
+width="1391"
+height="715"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-7_hu_6413a9af038906de.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-7_hu_519c2e167c600b5c.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-7"
+class="gallery-image"
+data-flex-grow="194"
+data-flex-basis="466px"
+>&lt;/p>
+&lt;ul>
+&lt;li>使用神经网络参数化概率分布&lt;/li>
+&lt;li>将简单的先验分布（如高斯分布）转换为复杂的数据分布&lt;/li>
+&lt;li>学习数据的隐含结构和生成过程&lt;/li>
+&lt;/ul>
+&lt;p>POV:&lt;/p>
+&lt;ul>
+&lt;li>生成模型会将一些深度神经网络作为构建模块。&lt;/li>
+&lt;li>就像深度神经网络会将某些 &amp;ldquo;层&amp;rdquo; 作为构建模块一样。&lt;/li>
+&lt;li>生成模型是更高层级的抽象。&lt;/li>
+&lt;/ul>
+&lt;h3 id="使用方法">使用方法
+&lt;/h3>&lt;p>生成式模型的核心是学习从条件信息 y 到目标数据 x 的映射过程：$P(x|y)$&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-8.png"
+width="1340"
+height="678"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-8_hu_91fcc7bd1df59c32.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-8_hu_b64014cac397bb3a.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-8"
+class="gallery-image"
+data-flex-grow="197"
+data-flex-basis="474px"
+>&lt;/p>
+&lt;p>条件信息 y 在实际应用中可以是多种形式：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>文本描述&lt;/strong>：如&amp;quot;一只橙色的猫坐在窗台上&amp;quot;（文生图）&lt;/li>
+&lt;li>&lt;strong>类别标签&lt;/strong>：如数字&amp;quot;7&amp;quot;（条件图像生成）&lt;/li>
+&lt;li>&lt;strong>属性向量&lt;/strong>：如年龄、性别、表情等（人脸生成）&lt;/li>
+&lt;li>&lt;strong>部分数据&lt;/strong>：如图像的一部分（图像补全）&lt;/li>
+&lt;li>&lt;strong>其他模态数据&lt;/strong>：如音频、视频片段（跨模态生成）&lt;/li>
+&lt;/ul>
+&lt;p>本质上，y 是对生成空间的约束，它提供了低熵、高抽象的信息，而模型则负责将这些约束转化为高熵、高细节的具体数据 x。这种从抽象到具体的映射过程，使生成式模型能够在保持一致性的同时产生多样化的输出。&lt;/p>
+&lt;p>深度生成模型的主要应用场景：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>数据生成&lt;/strong>：创建新的、逼真的样本&lt;/li>
+&lt;li>&lt;strong>数据增强&lt;/strong>：为监督学习任务生成额外训练数据&lt;/li>
+&lt;li>&lt;strong>异常检测&lt;/strong>：识别不符合学习分布的样本&lt;/li>
+&lt;li>&lt;strong>缺失数据填补&lt;/strong>：根据部分观察推断完整数据&lt;/li>
+&lt;li>&lt;strong>压缩表示&lt;/strong>：学习数据的紧凑编码&lt;/li>
+&lt;/ol>
+&lt;h2 id="主要生成模型类型">主要生成模型类型
+&lt;/h2>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-9.png"
+width="1250"
+height="740"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-9_hu_67503cf93b69e0c0.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-9_hu_137b3a870ad7c88f.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-9"
+class="gallery-image"
+data-flex-grow="168"
+data-flex-basis="405px"
+>&lt;/p>
+&lt;h3 id="自回归模型-autoregressive-models">自回归模型 (Autoregressive Models)
+&lt;/h3>&lt;p>自回归模型将联合分布分解为条件概率的乘积：
+$P(x) = \prod_{i=1}^{n} P(x_i|x_{&amp;lt;i})$&lt;/p>
+&lt;p>特点：&lt;/p>
+&lt;ul>
+&lt;li>显式密度模型，可以直接计算似然&lt;/li>
+&lt;li>生成过程是顺序的，每次生成一个元素&lt;/li>
+&lt;li>代表模型：PixelRNN, PixelCNN, WaveNet, 语言模型&lt;/li>
+&lt;li>最近特别强大的 GPT4o 就使用了自回归模型而非 diffusion model 来生成图像, 效果极其恐怖&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-10.jpg"
+width="1024"
+height="1536"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-10_hu_8f94989c5932e7f8.jpg 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-10_hu_d77d944712821c0.jpg 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-10"
+class="gallery-image"
+data-flex-grow="66"
+data-flex-basis="160px"
+>&lt;/p>
+&lt;h3 id="变分自编码器-vae">变分自编码器 (VAE)
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-11.png"
+width="1558"
+height="800"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-11_hu_18b6293ce7732e5.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-11_hu_1c08c2fb6df3acf1.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-11"
+class="gallery-image"
+data-flex-grow="194"
+data-flex-basis="467px"
+>&lt;/p>
+&lt;p>VAE 通过变分推断学习潜在变量模型, 直接对一个图片建立一个概率分布：&lt;/p>
+&lt;ul>
+&lt;li>编码器网络：$q_\phi(z|x)$ 近似后验分布&lt;/li>
+&lt;li>解码器网络：$p_\theta(x|z)$ 从潜在变量重建数据&lt;/li>
+&lt;li>目标函数：ELBO (Evidence Lower BOund)
+$$\mathcal{L}(\theta,\phi;x) = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - D_{KL}(q_\phi(z|x)||p(z))$$&lt;/li>
+&lt;/ul>
+&lt;p>特点：&lt;/p>
+&lt;ul>
+&lt;li>学习有意义的潜在空间&lt;/li>
+&lt;li>生成质量通常不如 GAN&lt;/li>
+&lt;li>训练稳定，避免模式崩溃&lt;/li>
+&lt;li>后续成为了 stable diffusion 的一个模块&lt;/li>
+&lt;/ul>
+&lt;h3 id="生成对抗网络-gan">生成对抗网络 (GAN)
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-12.png"
+width="1528"
+height="882"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-12_hu_fb0e9359eb1c0194.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-12_hu_18a94bc5e547e577.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-12"
+class="gallery-image"
+data-flex-grow="173"
+data-flex-basis="415px"
+>&lt;/p>
+&lt;p>GAN 通过博弈论框架学习生成模型：&lt;/p>
+&lt;ul>
+&lt;li>生成器 G：创建看起来真实的样本&lt;/li>
+&lt;li>判别器 D：区分真实样本和生成样本&lt;/li>
+&lt;li>目标函数：&lt;/li>
+&lt;/ul>
+$$\min_G \max_D V(D,G) = \mathbb{E}_{x\sim p_{data}}[\log D(x)] + \mathbb{E}_{z\sim p_z}[\log(1-D(G(z)))]$$&lt;p>特点：&lt;/p>
+&lt;ul>
+&lt;li>生成质量极高&lt;/li>
+&lt;li>训练不稳定，容易模式崩溃&lt;/li>
+&lt;li>难以评估模型质量&lt;/li>
+&lt;li>变种众多：DCGAN, WGAN, StyleGAN 等&lt;/li>
+&lt;/ul>
+&lt;p>效果图:&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-13.png"
+width="636"
+height="638"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-13_hu_fc381913958a240c.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-13_hu_74e1b8b55d27c21d.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-13"
+class="gallery-image"
+data-flex-grow="99"
+data-flex-basis="239px"
+> image 20250330101500. Png&lt;/p>
+&lt;h3 id="扩散模型-diffusion-models">扩散模型 (Diffusion Models)
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-14.png"
+width="1567"
+height="877"
+srcset="https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-14_hu_b1ace60cfff951ec.png 480w, https://tok1024.com/p/bayesian-ai/images/Bayesian%20AI-image-14_hu_36e5758cc264f73f.png 1024w"
+loading="lazy"
+alt="Bayesian-AI-image-14"
+class="gallery-image"
+data-flex-grow="178"
+data-flex-basis="428px"
+>&lt;/p>
+&lt;p>扩散模型通过逐步去噪学习生成过程：&lt;/p>
+&lt;ul>
+&lt;li>前向过程：逐步向数据添加噪声&lt;/li>
+&lt;li>反向过程：学习去噪，恢复原始数据&lt;/li>
+&lt;li>目标函数：预测添加的噪声&lt;/li>
+&lt;/ul>
+&lt;p>特点：&lt;/p>
+&lt;ul>
+&lt;li>生成质量超越 GAN&lt;/li>
+&lt;li>训练稳定&lt;/li>
+&lt;li>推理速度较慢&lt;/li>
+&lt;li>代表模型：DDPM, DALL-E 2, Stable Diffusion&lt;/li>
+&lt;/ul>
+&lt;h2 id="总结">总结
+&lt;/h2>&lt;p>本文通过贝叶斯视角揭示了现代AI的核心本质：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>贝叶斯思想的革命性影响&lt;/strong>：贝叶斯学派将概率从客观频率重新定义为不确定性的度量，这一转变是现代AI能够处理复杂、不确定世界的理论基础。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>判别式到生成式的范式转变&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>判别式模型（$P(y|x)$）只关注输入到输出的映射，本质上是确定性的&lt;/li>
+&lt;li>生成式模型（$P(x,y)$或$P(x)$）学习数据本身的分布，能够产生多样化输出&lt;/li>
+&lt;li>这一转变解释了为什么大模型能够对同一问题给出不同但合理的回答&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>潜变量与概率分布变换&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>引入潜变量$z$是现代生成模型的关键突破&lt;/li>
+&lt;li>通过将复杂分布表示为简单分布的变换，AI获得了&amp;quot;创造性&amp;quot;&lt;/li>
+&lt;li>深度神经网络作为这种变换的强大近似器，使复杂分布的建模成为可能&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>采样机制的重要性&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>大模型不是简单地记忆和重复，而是从学习到的概率分布中采样&lt;/li>
+&lt;li>这种机制使AI能够生成新颖且多样的内容，而非固定输出&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>这种基于概率的视角不仅统一了从VAE到GAN再到扩散模型和自回归模型的技术路线，也为我们理解AI的能力边界提供了理论框架。正是贝叶斯思想的引入，使AI从简单的模式匹配工具进化为能够处理不确定性、具有创造性的智能系统。&lt;/p>
+&lt;p>回到开篇的问题：大模型写的作业不会雷同，正是它们不是确定性地输出&amp;quot;最优解&amp;quot;，而是从学习到的概率分布中进行采样，这种基于概率的生成机制是现代AI最本质的特征。&lt;/p></description></item></channel></rss>

@@ -1,0 +1,936 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Transformer on Toki 的个人博客</title><link>https://tok1024.com/tags/transformer/</link><description>Recent content in Transformer on Toki 的个人博客</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 15 Mar 2025 11:31:55 +0800</lastBuildDate><atom:link href="https://tok1024.com/tags/transformer/index.xml" rel="self" type="application/rss+xml"/><item><title>My Transformer</title><link>https://tok1024.com/p/my-transformer/</link><pubDate>Sat, 15 Mar 2025 11:31:55 +0800</pubDate><guid>https://tok1024.com/p/my-transformer/</guid><description>&lt;h2 id="intro">Intro
+&lt;/h2>&lt;p>最近在学习深度学习的基础知识, 对于五花八门的模型深感神奇, 大受震撼, 但是觉得实操能力欠佳, 于是尝试实操手搓一个 Transformer&lt;/p>
+&lt;p>训练一个模型有四个步骤: 数据处理 -&amp;gt; 定义模型 -&amp;gt; 定义损失函数 -&amp;gt; 优化, 我们这次也将按照这个步骤进行, 过程参考 b 站视频 &lt;a class="link" href="https://www.bilibili.com/video/BV1BbFaeVE4W" target="_blank" rel="noopener"
+>Pytorch手搓 Transformer&lt;/a>&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-1.png"
+width="1501"
+height="862"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-1_hu_1ec8aba735bd98d8.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-1_hu_1b230594cff6ccf6.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-1"
+class="gallery-image"
+data-flex-grow="174"
+data-flex-basis="417px"
+>&lt;/p>
+&lt;h3 id="transformer">Transformer
+&lt;/h3>&lt;p>首先, 什么是 transformer?&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-2.png"
+width="537"
+height="346"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-2_hu_a3c07671007e94c3.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-2_hu_81a9e1b46faacbdf.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-2"
+class="gallery-image"
+data-flex-grow="155"
+data-flex-basis="372px"
+>&lt;/p>
+&lt;p>当然不是变形金刚, Transformer 是一个基于 &lt;strong>Self-Attention&lt;/strong>机制的 &lt;strong>Seq2seq&lt;/strong> 的深度学习模型, 能够捕捉上下文的信息和序列数据, 可以并行训练, 现在已经得到广泛的应用, 我们熟悉的 BERT, GPT, Deepseek 都使用了 Transformer 架构, 足以证明其性能的优越性&lt;/p>
+&lt;p>我们这次将训练一个非常简单的 transformer, 输入数据是上文, 设定一个生成的文本长度, 然后直接输出下文, 未来可能会把起始和结束标识编码到 embedding 向量中, 但我现在还不会&lt;/p>
+&lt;h2 id="数据处理">数据处理
+&lt;/h2>&lt;p>我们的原始数据是中文的文本文件, 要想存储到计算机中供模型训练, 就需要先把每个字转换为一个 &lt;code>token&lt;/code>, 再将 &lt;code>token&lt;/code> 经过 Embedding 嵌入为词向量&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-3.png"
+width="1002"
+height="525"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-3_hu_e542ce639874fbe2.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-3_hu_34e429d4d4e74803.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-3"
+class="gallery-image"
+data-flex-grow="190"
+data-flex-basis="458px"
+>&lt;/p>
+&lt;h3 id="token-化">Token 化
+&lt;/h3>&lt;p>这一步中, 我们需要创建唯一, 有序的字符集, 然后建立数字即 Token 到字符的映射&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 有序的字符集合&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">chars&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">sorted&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">list&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">set&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">)))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 字符到数字的映射&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">c2i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">enumerate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="p">)}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">i2c&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="n">c&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">enumerate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="p">)}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 编码: 字符串 -&amp;gt; 数字列表&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 解码: 数字列表 -&amp;gt; 字符串&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">encode&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">lambda&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="n">c2i&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">decode&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">lambda&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">join&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">i2c&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="数据分组">数据分组
+&lt;/h3>&lt;p>训练模型时, 一条一条训练效率过于低下, 我们会选择一次处理一批数据, 这样可以利用 GPU 的并行性, 提高性能, 每一个向量是长度为 &lt;code>block_size&lt;/code> 的字符串&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-4.png"
+width="1190"
+height="708"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-4_hu_3b1257f6461f8a0d.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-4_hu_9bc4518e90917798.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-4"
+class="gallery-image"
+data-flex-grow="168"
+data-flex-basis="403px"
+>&lt;/p>
+&lt;p>所以一批训练资料是 &lt;code>[batch_size, block_size, embedding_dim]&lt;/code> 的三阶张量&lt;/p>
+&lt;h4 id="get_batch">&lt;code>get_batch&lt;/code>
+&lt;/h4>&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-5.png"
+width="1465"
+height="442"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-5_hu_3c043398af04e503.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-5_hu_dfb321013003f8bd.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-5"
+class="gallery-image"
+data-flex-grow="331"
+data-flex-basis="795px"
+>&lt;/p>
+&lt;p>对于 batch 的选择, 我们随机在文本中取一段 block&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># TODO: 数据分批&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 1. 划分数据集&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 直接对text进行编码&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tensor&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">encode&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">dtype&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">long&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">valid_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">validation_split&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">valid_data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">valid_size&lt;/span>&lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">train_data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">data&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="n">valid_size&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 2. get_batch函数&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 从数据集中随机取出batch_size个数据&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 输入: split - &amp;#34;valid&amp;#34; or &amp;#34;train&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 输出: (batch_size, block_size)的tensor&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">def&lt;/span> &lt;span class="nf">get_batch&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">split&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">valid_data&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">split&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="s2">&amp;#34;valid&amp;#34;&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="n">train_data&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">idx&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">randint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="n">block_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">batch_size&lt;/span>&lt;span class="p">,))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># stack处理一个列表,把一个张量的列表在新的维度上堆叠起来&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">x&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">stack&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">idx&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">y&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">stack&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">idx&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># x是字符串的列表, y是x的下一个字符的列表&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">y&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">y&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">get_batch&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;train&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>这里用到了 &lt;code>torch.stack&lt;/code>, 让我想起来另一个常用的拼接 api &lt;code>torch.cat&lt;/code>, 二者有什么区别呢?&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 创建两个示例张量&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">a&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tensor&lt;/span>&lt;span class="p">([[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">]])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">b&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tensor&lt;/span>&lt;span class="p">([[&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">6&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">7&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">]])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 使用 torch.cat 进行拼接&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">cat_result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cat&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">a&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;torch.cat 结果：&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">cat_result&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;形状：&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cat_result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 使用 torch.stack 进行拼接&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">stack_result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">stack&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">a&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="se">\n&lt;/span>&lt;span class="s2">torch.stack 结果：&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">stack_result&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;形状：&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">stack_result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>输出结果:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-plaintext" data-lang="plaintext">&lt;span class="line">&lt;span class="cl">torch.cat 结果：
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tensor([[1, 2], [3, 4], [5, 6], [7, 8]])
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">形状： torch.Size([4, 2])
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">torch.stack 结果：
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">形状： torch.Size([2, 2, 2])
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>原来 stack 是在新的维度上连接原本的两个张量, 而 cat 是在外层维度拼接两个张量&lt;/p>
+&lt;h3 id="词嵌入">词嵌入
+&lt;/h3>&lt;p>我们已经有了字符到数字的映射, 但是现在这个数字没什么含义, 更无法参与运算, 那我们就需要把每个词表示为一个向量, 这就用到了 &lt;code>nn.Embedding&lt;/code> 子类, 创建一个 &lt;code>embedding_table&lt;/code>, 维护字符集的索引到 Embedding 空间的映射&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-6.png"
+width="1514"
+height="738"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-6_hu_e62424821608eb22.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-6_hu_59c890ba86b662d4.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-6"
+class="gallery-image"
+data-flex-grow="205"
+data-flex-basis="492px"
+>&lt;/p>
+&lt;p>一开始时, 嵌入向量随机生成, 然后不断梯度优化, 可能会和真实的语义有一定的相关性&lt;/p>
+&lt;h3 id="位置嵌入">位置嵌入
+&lt;/h3>&lt;p>我们知道, 在一个文本中, 词语和其在文本中的顺序是有很强的关系的, 这就需要把位置编码词向量, 这里我们同样用 pytorch 提供的 embedding 类进行嵌入, 与原文的正余弦不同, 后续可以进行调整&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-7.png"
+width="1469"
+height="631"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-7_hu_891943d336c3d25e.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-7_hu_4a31acff8e2c54df.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-7"
+class="gallery-image"
+data-flex-grow="232"
+data-flex-basis="558px"
+>&lt;/p>
+&lt;p>最后把词嵌入和位置嵌入的向量相加得到输入向量&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 位置嵌入&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">position_embedding_table&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">position_ebd&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">position_embedding_table&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">arange&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">))&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">unsqueeze&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">None&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">T&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">ve&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">vocab_embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">pe&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">position_embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">arange&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">ve&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">pe&lt;/span> &lt;span class="c1"># (B, T, E)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">blocks&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln_f&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">logits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">fc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="模型构建">模型构建
+&lt;/h2>&lt;h3 id="基础模型">基础模型
+&lt;/h3>&lt;p>我们先考虑创建一个简单的傻瓜模型&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-8.png"
+width="1489"
+height="693"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-8_hu_7e9314b5a868c7e5.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-8_hu_c3fe7e89ead71e13.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-8"
+class="gallery-image"
+data-flex-grow="214"
+data-flex-basis="515px"
+>&lt;/p>
+&lt;p>把嵌入后的张量输入神经网络, 他会随机输出一个张量, 维度是 &lt;code>[Batch_size, Block_size, Vocabsize]&lt;/code>, 其中最后一维是归一化的, 代表了下文中每个 Token 的概率, 不过这里是随机生成的&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-9.png"
+width="847"
+height="424"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-9_hu_c0043729fb7c4895.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-9_hu_f569e8e835b00b9d.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-9"
+class="gallery-image"
+data-flex-grow="199"
+data-flex-basis="479px"
+>&lt;/p>
+&lt;p>Token 生成: 从概率分布中抽样出 one-hot 向量, 使用 &lt;code>torch.multinomial&lt;/code>&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-10.png"
+width="1069"
+height="381"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-10_hu_39c77b0f500511a5.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-10_hu_67cf027f15c0d3de.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-10"
+class="gallery-image"
+data-flex-grow="280"
+data-flex-basis="673px"
+>&lt;/p>
+&lt;p>实现:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># Model&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">LanguageModel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">super&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="fm">__init__&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># x: (batch_size, block_size) 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># target: (batch_size, block_size) 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 返回: (batch_size, block_size, vocab_size) logits&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">None&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">T&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">random_tensor&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">rand&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">vocab_size&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">random_tensor&lt;/span> &lt;span class="o">/&lt;/span> &lt;span class="n">random_tensor&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sum&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dim&lt;/span>&lt;span class="o">=-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">keepdim&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">True&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">loss&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 生成&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># token_seq: (batch_size, block_size) 上文, 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># max_token: int 最大生成长度&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 返回: (batch_size, max_token) 生成的token序列&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">generate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">max_token&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">_&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">max_token&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 取最后block_size个token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">token_input&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 计算logits&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">token_input&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 取字符串的最后一个字符, 目前还只是网络直接输出的结果&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">logits&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># softmax,维度是-1,也就是vocabulary的维度&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">prob&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">F&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">softmax&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 采样, 输出是下一个token,形状是(batch_size, 1)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">next_token&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">multinomial&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">prob&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 拼接到token_seq后面, 在时间维度上&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">token_seq&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cat&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">token_seq&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">next_token&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="n">max_token&lt;/span>&lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="矩阵变换">矩阵变换
+&lt;/h3>&lt;p>在神经网络中, 我们不会用嵌入向量来进行计算, 而是把词向量&lt;strong>投影到不同的子空间中&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>Q: 查询矩阵, 定义了该 Token 如何去访问别的 Token 的信息&lt;/li>
+&lt;li>K: 键矩阵, 定义了该 Token 给别的矩阵提供哪些信息&lt;/li>
+&lt;li>V: 值矩阵, 定义了词向量到我们创建的子空间的映射&lt;/li>
+&lt;/ul>
+&lt;p>再看下论文中优美的公式&lt;/p>
+&lt;p>$Attention(Q,K,V)=softmax(\frac{ QK^T} {d_k}​)V$&lt;/p>
+&lt;p>几何意义：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>点积&lt;/strong>：在子空间 Rdk​ 中，计算两个向量的夹角余弦相似度（未缩放时）。&lt;/li>
+&lt;li>&lt;strong>缩放因子 dk​​&lt;/strong>：防止点积值过大导致梯度消失。&lt;/li>
+&lt;li>&lt;strong>softmax&lt;/strong>：将相似度转化为概率分布，表示不同位置的重要性权重。&lt;/li>
+&lt;/ul>
+&lt;p>这个公式精准的描述了 Attention 机制, 即用 Q 去查询 K, 对得到的矩阵除以一个缩放因子(防止梯度爆炸), 输入 softmax 得到注意力矩阵, 然后和 V 矩阵相乘后, 得到了 Token 的概率分布&lt;/p>
+&lt;h3 id="掩码矩阵">掩码矩阵
+&lt;/h3>&lt;p>实践中, 注意力矩阵不能全部都有值, 因为一个预测模型不能输入未来的向量, 这样会破坏模型结构&lt;/p>
+&lt;p>我们用下三角矩阵来表示&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-11.png"
+width="1476"
+height="695"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-11_hu_63b00df0cc7c60f8.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-11_hu_c807952f50e59537.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-11"
+class="gallery-image"
+data-flex-grow="212"
+data-flex-basis="509px"
+>&lt;/p>
+&lt;p>每一个值预测时, 我们只看上文, 防止答案泄露&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-12.png"
+width="1455"
+height="663"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-12_hu_1e4865f1fc10aad8.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-12_hu_fa563062908c6a04.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-12"
+class="gallery-image"
+data-flex-grow="219"
+data-flex-basis="526px"
+>&lt;/p>
+&lt;p>不可训练的矩阵: 三角矩阵, Tril 把右上角取为 0&lt;/p>
+&lt;p>单头注意力的实现&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># Heads&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Head&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">head_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">head_size&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="nb">super&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="fm">__init__&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">value&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">head_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">bias&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">query&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">head_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">bias&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">key&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">head_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">bias&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># 生成一个不可训练的下三角矩阵&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">register_buffer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;mask&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tril&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ones&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">block_size&lt;/span>&lt;span class="p">)))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">dropout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dropout_rate&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># x: (batch_size, block_size, embedding_dim)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># return: (batch_size, block_size, head_size)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># 每个head有一个value矩阵, 用于计算attention&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">C&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">Q&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">query&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">K&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">attention&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">Q&lt;/span> &lt;span class="o">@&lt;/span> &lt;span class="n">K&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">transpose&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">C&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mf">0.5&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">attention&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">attention&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">masked_fill&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">mask&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">float&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;-inf&amp;#39;&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># 输出的结果是 value向量 * attention&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">V&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">attention&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">F&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">softmax&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">attention&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">attention&lt;/span> &lt;span class="o">@&lt;/span> &lt;span class="n">V&lt;/span> &lt;span class="c1"># (B, T, head_size)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="k">return&lt;/span>  &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">out&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="多头注意力">多头注意力
+&lt;/h3>&lt;p>Attention 机制实际是在模仿人类阅读和写作时的注意力, 那么人都可以三心二意, 机器为什么不行 (&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-13.png"
+width="1456"
+height="709"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-13_hu_9541afb8de28e8d8.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-13_hu_4650762ff76e2469.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-13"
+class="gallery-image"
+data-flex-grow="205"
+data-flex-basis="492px"
+>&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-14.png"
+width="1189"
+height="625"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-14_hu_9eb992b8c448ffb4.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-14_hu_86d4710e6ec004e.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-14"
+class="gallery-image"
+data-flex-grow="190"
+data-flex-basis="456px"
+>&lt;/p>
+&lt;p>所以我们把 embedding 分成多份, 分别用多个注意力头去关注整个向量&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-15.png"
+width="1063"
+height="442"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-15_hu_49ae9e10b62aacb9.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-15_hu_61db52740bcf90a.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-15"
+class="gallery-image"
+data-flex-grow="240"
+data-flex-basis="577px"
+>&lt;/p>
+&lt;p>实现:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">MultiHead&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="nb">super&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="fm">__init__&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">heads&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ModuleList&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">Head&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">_&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">head_num&lt;/span>&lt;span class="p">)])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">fc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">head_num&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">head_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">dropout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dropout_rate&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># x: (batch_size, block_size, embedding_dim)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># return: (batch_size, block_size, embedding_dim)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">fc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cat&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">h&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">heads&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">out&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="k">return&lt;/span> &lt;span class="n">out&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="残差连接">残差连接
+&lt;/h3>&lt;p>实践中, 加入残差连接和 Layer Norm 效果会更好&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-16.png"
+width="1448"
+height="1087"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-16_hu_f3168462dedc1dda.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-16_hu_8c7661ffb333db24.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-16"
+class="gallery-image"
+data-flex-grow="133"
+data-flex-basis="319px"
+>&lt;/p>
+&lt;h4 id="residual-connection">Residual connection:
+&lt;/h4>&lt;p>也就是把输出的 b 向量加上输入的 a 向量, 一个理解是我们 QKV 矩阵变换实际上计算出的向量, 可以理解为一个词语向量在上下文中的偏移, 要加上原本的向量才更加稳定, 不管怎么样, 他 works, 可以缓解梯度消失问题&lt;/p>
+&lt;h4 id="layer-norm">Layer Norm:
+&lt;/h4>&lt;p>区分于 BatchNorm, BN 是对整个 batch 的同一个 dimension 的 feature 进行归一化, LN 是对同一个向量的不同 dimension 归一化&lt;/p>
+&lt;p>我们不仅 self-attention 的输出要残差连接和归一化, 输入进 FC 的也要进行残差连接和归一化, 于是直接把这个整体封装成一个 Block&lt;/p>
+&lt;h4 id="block">Block
+&lt;/h4>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Block&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="nb">super&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="fm">__init__&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln1&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">LayerNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln2&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">LayerNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sa&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">MultiHead&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ff&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Sequential&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">            &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">hidden_dim&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">            &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ReLU&lt;/span>&lt;span class="p">(),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">            &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dropout_rate&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">            &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">hidden_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">            &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dropout_rate&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">    &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># x: (batch_size, block_size, embedding_dim)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="c1"># return: (batch_size, block_size, embedding_dim)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sa&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln2&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">out&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ff&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">out&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">        &lt;span class="k">return&lt;/span> &lt;span class="n">out&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>值得一提的是, 这里原论文是先输进注意力层, 再 ln, 叫做 post-ln, 有论文说 pre-ln 效果更好, 我也采用了 pre-ln, 不过感觉没啥提升, 可能是我数据太烂了, 没怎么做清洗, 这不是重点&lt;/p>
+&lt;h3 id="多级残差网络">多级残差网络
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-17.png"
+width="1390"
+height="552"
+srcset="https://tok1024.com/p/my-transformer/images/My%20Transformer-image-17_hu_8bc62412eda5174e.png 480w, https://tok1024.com/p/my-transformer/images/My%20Transformer-image-17_hu_c6d4988e403b212.png 1024w"
+loading="lazy"
+alt="My-Transformer-image-17"
+class="gallery-image"
+data-flex-grow="251"
+data-flex-basis="604px"
+>&lt;/p>
+&lt;p>为了增加模型的复杂性, 我们会连接多个 block, 形成复杂的网络, 在 pytorch 中也很好实现这一点, 于是模型最终版完成了&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;span class="lnt">52
+&lt;/span>&lt;span class="lnt">53
+&lt;/span>&lt;span class="lnt">54
+&lt;/span>&lt;span class="lnt">55
+&lt;/span>&lt;span class="lnt">56
+&lt;/span>&lt;span class="lnt">57
+&lt;/span>&lt;span class="lnt">58
+&lt;/span>&lt;span class="lnt">59
+&lt;/span>&lt;span class="lnt">60
+&lt;/span>&lt;span class="lnt">61
+&lt;/span>&lt;span class="lnt">62
+&lt;/span>&lt;span class="lnt">63
+&lt;/span>&lt;span class="lnt">64
+&lt;/span>&lt;span class="lnt">65
+&lt;/span>&lt;span class="lnt">66
+&lt;/span>&lt;span class="lnt">67
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># Model&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">LanguageModel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">super&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="fm">__init__&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">vocab_embedding&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">vocab_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">position_embedding&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">blocks&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Sequential&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">Block&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">_&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num_blocks&lt;/span>&lt;span class="p">)])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">dropout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Dropout&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mf">0.2&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln_f&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">LayerNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">fc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nn&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Linear&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">embedding_dim&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">vocab_size&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># x: (batch_size, block_size) 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># target: (batch_size, block_size) 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 返回: (batch_size, block_size, vocab_size) logits&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">None&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">T&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">shape&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">ve&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">vocab_embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">pe&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">position_embedding&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">arange&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">device&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">ve&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">pe&lt;/span> &lt;span class="c1"># (B, T, E)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">blocks&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">h&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ln_f&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">fc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">h&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 计算loss&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="n">target&lt;/span> &lt;span class="ow">is&lt;/span> &lt;span class="ow">not&lt;/span> &lt;span class="kc">None&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">F&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cross_entropy&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">logits&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">view&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">view&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">else&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">loss&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 生成&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># token_seq: (batch_size, block_size) 上文, 单位是token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># max_token: int 最大生成长度&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 返回: (batch_size, max_token) 生成的token序列&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">generate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">max_token&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">_&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">max_token&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 取最后block_size个token&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">token_input&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="n">block_size&lt;/span>&lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 计算logits&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">token_input&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 取字符串的最后一个字符, 目前还只是网络直接输出的结果&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">logits&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># softmax,维度是-1,也就是vocabulary的维度&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">prob&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">F&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">softmax&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 采样, 输出是下一个token,形状是(batch_size, 1)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">next_token&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">multinomial&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">prob&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="c1"># 拼接到token_seq后面, 在时间维度上&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">token_seq&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cat&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="n">token_seq&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">next_token&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">dim&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">token_seq&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="n">max_token&lt;/span>&lt;span class="p">:]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nd">@torch.no_grad&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">def&lt;/span> &lt;span class="nf">estimate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">model&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">splits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;train&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;valid&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">model&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">eval&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">out&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">split&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">splits&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">losses&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">zeros&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num_interval&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num_interval&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">y&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">get_batch&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">split&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">logits&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">model&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">losses&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">loss&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">item&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">out&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">split&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">losses&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">mean&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">model&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">train&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">out&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="复盘">复盘
+&lt;/h2>&lt;h3 id="成果">成果
+&lt;/h3>&lt;p>用一些名著训练看看效果吧, 首先调整一下超参数&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># Hyperparameters&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">random_seed&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">3221&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">manual_seed&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">random_seed&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">batch_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">128&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">block_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">256&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">num_blocks&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">4&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">head_num&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">12&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">embedding_dim&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">192&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">validation_split&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.2&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">device&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;cuda&amp;#34;&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">torch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">cuda&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">is_available&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="s2">&amp;#34;cpu&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">wrapped_width&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">50&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">hidden_dim&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">768&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">num_epochs&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1000&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">learning_rate&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">5&lt;/span>&lt;span class="n">e&lt;/span>&lt;span class="o">-&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">weight_decay&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.06&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">patience&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">100&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">dropout_rate&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.1&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">num_interval&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num_epochs&lt;/span> &lt;span class="o">//&lt;/span> &lt;span class="mi">10&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">50&lt;/span>&lt;span class="p">)&lt;/span>  &lt;span class="c1"># 每5%的epochs或至少每10个epochs验证一次&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">head_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">embedding_dim&lt;/span> &lt;span class="o">//&lt;/span> &lt;span class="n">head_num&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>训练过程耗时 11m 21.8s&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-plaintext" data-lang="plaintext">&lt;span class="line">&lt;span class="cl">Epoch 0, Loss: 8.412135124206543
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 8.115385055541992
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 8.124889373779297
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 100, Loss: 5.311680793762207
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 5.232851982116699
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.768039703369141
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 200, Loss: 4.538897514343262
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 4.509884357452393
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.323651313781738
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 300, Loss: 4.282341480255127
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 4.204404354095459
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.213500499725342
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 400, Loss: 4.078436851501465
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 4.0135650634765625
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.163753032684326
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 500, Loss: 3.9056577682495117
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 3.8425979614257812
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.133504867553711
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 600, Loss: 3.766578435897827
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 3.689257860183716
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.1122727394104
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 700, Loss: 3.659522294998169
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 3.543461799621582
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.107848644256592
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Epoch 800, Loss: 3.543654203414917
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Train Loss: 3.4007351398468018
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Valid Loss: 5.122027397155762
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Early stopping!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>生成点文字看看:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-plaintext" data-lang="plaintext">&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">上文:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">余。 同时，总的生产规模之扩大，当然增加那种不是直接有赖于个别企业大小的经济。这些经济中最重要的，是由于相关的工业部门的发达而产生的，这些部门互相帮助，也许集
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">中在同一地方，但无论如何，它们都利用轮船、火车、电报、印刷机等所提供的近代交通便利。像这种来源所产生的各种经济，是任何生产部门都可获得的，而不是完全依靠它自己的
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">发达：但是，这些经济必然是随着它自己的发达而迅速地和稳步地增大；如果它衰败的话，这些经济在某些方面—— 虽然不是在一切方面——必然是缩小的。
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">第二节　生产费用应当以一个代表性企业来说明，这
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">真实下文:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">个企业能正常地获得属于一定的总生产量的内部经济与外部经济。报酬不变与报酬递增。 当我们研究支配一种商品的供给价格之各种原因时，这些结果具有很大的重要性。我们必
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">须仔细分析生产一种商品与一定的总生产量有关的正常费用；为了这个目的，我们将要研究在那个总生产量之下一个代表性生产者的费用。一方面，我们不要选择某一刚刚竭力投身营
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">业的新生产者为代表，他在许多不利的条件下经营，一时不得不满足于很少的利润或没有利润，但他对以下的事实是满意的；他正在建立营业关系，对于建立成功的营业正有头绪；另
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">一方面，我们也不要采取这样一个企业为代表：由于非常持久的能力和好运气，它已经有了很大的营业和井井有条的大工场，而这些大工
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">--------------------------------------------------
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">生成下文:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">些参与备有收入和公司机的关系。雷益似存在深认为，我付不要大多用这一个新加上升的经济信息，它可以先衰退出于他们所作用加就适了此，附高的例外里学习的时就是因素解它。
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">我的行为使用于学说：无能支付的研究别人地者和银到这家愿意识良好工业，获得将会在因非营销反悔的技能性组织、不同的冒险的一种，看待着较有良好，当地工作更多的陈产也也
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">就产项目希望财富为是工员。真正越多的和同样的每一种情习这种成为，而是世界上受过的生的心理解它的机会，经纪人就增加了。正式和政府的“后，你想将来看承虚拟时间的梦想
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">忘镜子。”超过去在太富了贫穷人不变化，还到10美元的“变成虚拟轻松工作”中，而自己也是然寻法律的这一个人所组成了，但现恶
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>可以看出来效果还是不错的, 虽然没什么语义, 但是标点符号基本都能对上, 看着也像个句子, 嗯, 很满意&lt;/p>
+&lt;h3 id="问题分析">问题分析
+&lt;/h3>&lt;ul>
+&lt;li>可以看到训练过程中出现了明显的过拟合问题, 应该主要是数据不足的问题&lt;/li>
+&lt;li>训练过程中, 验证集的 loss 计算的很慢, 跟训练的时间都差不多了, 这个后续可以优化一下&lt;/li>
+&lt;li>超参数和模型没有太多优化, 因为模型训练太慢了, 我也懒得等&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;h3 id="总结">总结
+&lt;/h3>&lt;p>很好玩的一次实践, 之前一直对 pytorch 里张量的维数有点晕, 实操一次下来就比较清晰了, 对 transformer 的认识也更加清晰了, 非常感谢 b 站 up &lt;a class="link" href="https://space.bilibili.com/1570063857" target="_blank" rel="noopener"
+>黯淡蓝点的居民&lt;/a>的视频和 NTU 李宏毅老师的机器学习课程&lt;/p></description></item></channel></rss>

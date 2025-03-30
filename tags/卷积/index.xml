@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>卷积 on Toki 的个人博客</title><link>https://tok1024.com/tags/%E5%8D%B7%E7%A7%AF/</link><description>Recent content in 卷积 on Toki 的个人博客</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Fri, 21 Mar 2025 23:25:38 +0800</lastBuildDate><atom:link href="https://tok1024.com/tags/%E5%8D%B7%E7%A7%AF/index.xml" rel="self" type="application/rss+xml"/><item><title>卷积</title><link>https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/</link><pubDate>Fri, 21 Mar 2025 23:25:38 +0800</pubDate><guid>https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/</guid><description>&lt;h2 id="概念">概念
+&lt;/h2>&lt;p>首先, 什么是卷积?&lt;/p>
+&lt;p>卷积是一种特殊的积分变换，它通过以下步骤将两个函数 f 和 g 组合：&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-1.png"
+width="2393"
+height="1169"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-1_hu_7a66c9aea83fc3da.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-1_hu_f71053dc48cf9670.png 1024w"
+loading="lazy"
+alt="卷积-image-1"
+class="gallery-image"
+data-flex-grow="204"
+data-flex-basis="491px"
+>&lt;/p>
+&lt;ol>
+&lt;li>将 g 函数翻折（$g (τ)→g (-τ)$）&lt;/li>
+&lt;li>对于输出的每个时间点 t，将翻折后的 g 函数&lt;strong>平移&lt;/strong>到 t 位置（g (-τ)→g (t-τ)）&lt;/li>
+&lt;li>计算 $f (τ)$ 与平移后的 $g (t-τ)$ 的乘积&lt;/li>
+&lt;li>对所有τ积分/求和，得到输出点 t 的值&lt;/li>
+&lt;/ol>
+&lt;p>数学表达为：&lt;/p>
+&lt;ul>
+&lt;li>连续情况：$(f * g)(t)$ = $∫f (τ) g (t-τ) dτ$&lt;/li>
+&lt;li>离散情况：$(f * g)[n] = ∑f[k]g[n-k]$&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-2.png"
+width="2507"
+height="891"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-2_hu_37973905ef3732b9.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-2_hu_755391ee44ea6f02.png 1024w"
+loading="lazy"
+alt="卷积-image-2"
+class="gallery-image"
+data-flex-grow="281"
+data-flex-basis="675px"
+>&lt;/p>
+&lt;h2 id="分析">分析
+&lt;/h2>&lt;h3 id="积分角度">积分角度
+&lt;/h3>&lt;p>为什么要进行这些操作? 让我们以用两个函数的叠加为背景来分析每个操作的合理性&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-3.png"
+width="2438"
+height="1312"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-3_hu_2d84c226477b4b39.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-3_hu_34632cf0e722794e.png 1024w"
+loading="lazy"
+alt="卷积-image-3"
+class="gallery-image"
+data-flex-grow="185"
+data-flex-basis="445px"
+>&lt;/p>
+&lt;p>首先需要确定的是: &lt;strong>卷积中的自变量是 t, 而非 x&lt;/strong>, 观察公式&lt;/p>
+$$y(t) = \int_{-\infty}^{\infty} f(\tau)g(t-\tau)d\tau$$&lt;ul>
+&lt;li>T 是我们关心的当前时刻&lt;/li>
+&lt;li>τ 是过去的某个时刻&lt;/li>
+&lt;li>T-τ 表示&amp;quot;从过去时刻τ到当前时刻 t 的时间差&lt;/li>
+&lt;/ul>
+&lt;p>也就是说我们实际上做的积分是: &lt;strong>过去的每一个时间 τ 的响应叠加起来, 会对当前时间 t 有多大的影响&lt;/strong>, 这样看下来是不是简单多了呢?&lt;/p>
+&lt;h3 id="翻折平移">翻折平移
+&lt;/h3>&lt;p>让我们继续换一个视角, 从函数翻折和平移的角度来思考&lt;/p>
+&lt;p>$g(t-\tau)$ 这个公式从几何角度如何理解? 先把函数&lt;strong>向左(时间提前)&lt;/strong> 平移 t 个单位, 然后再左右翻折&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5.png"
+width="2546"
+height="1429"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5_hu_57e730930021a8b5.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5_hu_6e865e843201280e.png 1024w"
+loading="lazy"
+alt="卷积-image-5"
+class="gallery-image"
+data-flex-grow="178"
+data-flex-basis="427px"
+>&lt;/p>
+&lt;p>让我们继续换一个视角，从函数翻折和平移的角度来思考卷积的几何意义。&lt;/p>
+&lt;p>$g(t-\tau)$ 这个表达式从几何角度如何理解？实际上是先将函数 $g(\tau)$ &lt;strong>左右翻折&lt;/strong>得到 $g(-\tau)$，然后再&lt;strong>向右(时间延迟)&lt;/strong> 平移 $t$ 个单位得到 $g(t-\tau)$。&lt;/p>
+&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5.png"
+width="2546"
+height="1429"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5_hu_57e730930021a8b5.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-5_hu_6e865e843201280e.png 1024w"
+loading="lazy"
+alt="卷积-image-5"
+class="gallery-image"
+data-flex-grow="178"
+data-flex-basis="427px"
+>&lt;/p>
+&lt;p>这个过程可以这样直观理解：想象 $g(x)$ 是一个&lt;strong>滑动的窗口或模板&lt;/strong>，我们将这个窗口沿着 $f(x)$ 移动。对于每一个时间点 $t$，我们：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>将窗口 $g$ 翻转&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将翻转后的窗口中心放在 $t$ 处&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算窗口与 $f(x)$ 的重叠部分（即它们的乘积）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对所有重叠部分求积分，得到卷积结果在 $t$ 处的值&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>为什么需要翻折？这是因为时间的对应关系。如果直接将 $f$ 和 $g$ 相乘而不翻折 $g$，时间对应关系会出现错误：$f$ 中较早的时间点（左侧）会与 $g$ 中较早的部分（也是左侧）对应。&lt;/p>
+&lt;p>但在物理系统中，较早发生的输入应该与系统较晚的响应对应——因为输入信号需要时间才能通过系统产生响应。翻折操作正是为了建立这种正确的时间对应关系：$f$ 中较早的输入（左侧）会与翻折后的 $g$ 中较晚的响应（右侧）对应。&lt;/p>
+&lt;p>这样，卷积操作 $g(t-\tau)$ 精确地捕捉了系统响应的时间演化特性，体现了&amp;quot;过去的输入如何影响当前的输出&amp;quot;这一物理本质。&lt;/p>
+&lt;h3 id="齐次性">齐次性
+&lt;/h3>&lt;p>卷积操作中的一个重要特性可以通过变量替换关系 $\tau + (t - \tau) = t$ 来理解。这个看似简单的等式实际上揭示了卷积的本质：&lt;/p>
+&lt;p>在卷积积分 $y(t) = \int_{-\infty}^{\infty} f(\tau)g(t-\tau)d\tau$ 中：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>$\tau$ 表示输入信号发生的时刻&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>$t-\tau$ 表示从输入到当前时刻的时间差&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>$t$ 是我们关心的当前时刻&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>这个齐次关系 $\tau + (t - \tau) = t$ 体现了因果性和时间不变性：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>时间守恒&lt;/strong>：输入时刻加上延迟时间等于输出时刻，这是物理系统中时间流逝的自然表达&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>坐标变换不变性&lt;/strong>：无论我们如何选择时间原点，卷积操作的结果都保持不变，这反映了物理规律的普适性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>线性时不变系统的本质&lt;/strong>：系统对输入的响应只取决于输入与当前时刻的时间差，而不依赖于绝对时间&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>从几何角度看，这种齐次性意味着卷积操作可以理解为一种&amp;quot;滑动加权平均&amp;quot;：随着时间点 $t$ 的变化，我们沿着时间轴滑动窗口 $g(t-\tau)$，但窗口的形状（即系统的响应特性）保持不变。&lt;/p>
+&lt;p>这种齐次性也解释了为什么卷积在频域中对应简单的乘法：时域中的这种&amp;quot;滑动不变性&amp;quot;在频域中表现为各频率分量的独立处理，每个频率分量只受到一个固定因子的调制。&lt;/p>
+&lt;h2 id="卷积有什么用">卷积有什么用
+&lt;/h2>&lt;p>卷积作为一种基本的数学运算，在多个领域都有广泛应用。以下是几个重要的应用场景：&lt;/p>
+&lt;h3 id="多项式乘法">多项式乘法
+&lt;/h3>$$A(x) = a_0 + a_1x + a_2x^2 + ... + a_nx^n$$$$B(x) = b_0 + b_1x + b_2x^2 + ... + b_mx^m$$$$c_k = \sum_{i=0}^{k} a_i b_{k-i}$$&lt;p>这正是离散卷积的形式。例如，$(1+2x+x^2)(3+x)$ 的展开可以通过计算序列 $[1,2,1]$ 和 $[3,1]$ 的卷积得到 $[3,7,5,1]$，对应多项式 $3+7x+5x^2+x^3$。&lt;/p>
+&lt;p>事实上, 把 x 换成 10, 这就是我们计算的竖式乘法, 所以&lt;del>我们小学二年级就已经学过卷积了&lt;/del>&lt;/p>
+&lt;h3 id="离散随机变量之和">离散随机变量之和
+&lt;/h3>&lt;p>当两个独立随机变量相加时，其概率分布是原本两个分布的卷积。例如，掷两个骰子并求和：&lt;/p>
+&lt;ul>
+&lt;li>第一个骰子的概率分布：$P_X = [1/6, 1/6, 1/6, 1/6, 1/6, 1/6]$（对应1-6点）&lt;/li>
+&lt;li>第二个骰子的概率分布：$P_Y = [1/6, 1/6, 1/6, 1/6, 1/6, 1/6]$&lt;/li>
+&lt;li>两骰子和的概率分布：$P_{X+Y} = P_X * P_Y$&lt;/li>
+&lt;/ul>
+&lt;p>计算结果为：$[1/36, 2/36, 3/36, 4/36, 5/36, 6/36, 5/36, 4/36, 3/36, 2/36, 1/36]$，对应和为2-12的概率。&lt;/p>
+&lt;h3 id="中心极限定理">中心极限定理
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-6.png"
+width="1455"
+height="694"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-6_hu_af27d4acb440690.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-6_hu_1d20c7c47d3ea327.png 1024w"
+loading="lazy"
+alt="卷积-image-6"
+class="gallery-image"
+data-flex-grow="209"
+data-flex-basis="503px"
+>&lt;/p>
+&lt;p>中心极限定理与卷积有深刻联系。当我们将多个独立同分布的随机变量相加时，根据卷积的性质，其分布会逐渐接近正态分布。&lt;/p>
+&lt;p>从数学角度看，这是因为多次卷积操作会使分布变得越来越&amp;quot;光滑&amp;quot;。具体来说：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>单个随机变量&lt;/strong>：假设我们有一个均匀分布的随机变量X，其概率密度函数是一个矩形。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>两个随机变量之和&lt;/strong>：X₁+X₂的分布是两个均匀分布的卷积，结果是一个三角形分布（也称为辛普森分布）。这已经比原始的矩形分布更加&amp;quot;圆滑&amp;quot;。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>三个随机变量之和&lt;/strong>：X₁+X₂+X₃的分布是三个均匀分布的卷积，或者说是均匀分布与三角形分布的卷积，结果是一个抛物线形状的分布，更接近钟形。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>更多随机变量之和&lt;/strong>：随着我们继续增加随机变量，每次卷积操作都会使分布变得更加平滑和对称，锐角被磨平，分布的中心部分变得更加突出。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h4 id="数学公式描述">数学公式描述
+&lt;/h4>&lt;p>假设我们有n个独立同分布的随机变量 $X_1, X_2, &amp;hellip;, X_n$，每个变量的期望为μ，方差为σ²。定义它们的和为：&lt;/p>
+$$S_n = X_1 + X_2 + ... + X_n$$&lt;p>根据概率论，$S_n$的期望和方差为：&lt;/p>
+$$E[S_n] = n\mu$$$$Var[S_n] = n\sigma^2$$&lt;p>中心极限定理告诉我们，当n足够大时，$S_n$的标准化形式：&lt;/p>
+$$Z_n = \frac{S_n - n\mu}{\sigma\sqrt{n}}$$&lt;p>的分布会收敛到标准正态分布N(0,1)：&lt;/p>
+$$Z_n \xrightarrow{d} N(0,1)$$&lt;p>也就是说，当n足够大时，$S_n$近似服从正态分布：&lt;/p>
+$$S_n \approx N(n\mu, n\sigma^2)$$&lt;h4 id="为什么会收敛到正态分布">为什么会收敛到正态分布？
+&lt;/h4>&lt;p>从傅里叶变换的角度，这一现象可以通过特征函数来解释。随机变量X的特征函数定义为：&lt;/p>
+$$\phi_X(t) = E[e^{itX}]$$&lt;p>对于独立随机变量的和，其特征函数是各个变量特征函数的乘积：&lt;/p>
+$$\phi_{S_n}(t) = [\phi_X(t)]^n$$&lt;p>当n很大时，可以通过泰勒展开证明：&lt;/p>
+$$\phi_{S_n}\left(\frac{t}{\sigma\sqrt{n}}\right) \approx e^{-\frac{t^2}{2}}$$&lt;p>而$e^{-\frac{t^2}{2}}$正是标准正态分布的特征函数。&lt;/p>
+&lt;p>从卷积角度看，这相当于说：重复卷积同一个分布n次，结果会趋向于正态分布的形状。这是因为卷积在频域对应乘法，多次卷积会强化中频成分，抑制高频成分，使得分布变得光滑且集中。&lt;/p>
+&lt;h3 id="卷积神经网络cnn">卷积神经网络(CNN)
+&lt;/h3>&lt;p>&lt;img src="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-7.png"
+width="1411"
+height="979"
+srcset="https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-7_hu_e6268e5608abe9fc.png 480w, https://tok1024.com/p/%E5%8D%B7%E7%A7%AF/images/%E5%8D%B7%E7%A7%AF-image-7_hu_b73bdb1c55134633.png 1024w"
+loading="lazy"
+alt="卷积-image-7"
+class="gallery-image"
+data-flex-grow="144"
+data-flex-basis="345px"
+>&lt;/p>
+&lt;p>在深度学习中，卷积神经网络利用卷积操作处理图像、语音等数据。CNN中的卷积层执行的操作是：&lt;/p>
+$$O[i,j] = \sum_{m}\sum_{n} I[i+m, j+n] \cdot K[m,n]$$&lt;p>其中：&lt;/p>
+&lt;ul>
+&lt;li>$I$ 是输入（如图像）&lt;/li>
+&lt;li>$K$ 是卷积核（可学习的权重矩阵）&lt;/li>
+&lt;li>$O$ 是输出特征图&lt;/li>
+&lt;/ul>
+&lt;p>卷积操作使CNN具有以下特性：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>局部感受&lt;/strong>：每个神经元只关注输入的一小部分&lt;/li>
+&lt;li>&lt;strong>参数共享&lt;/strong>：同一个卷积核在整个输入上滑动，大大减少参数数量&lt;/li>
+&lt;li>&lt;strong>平移不变性&lt;/strong>：无论特征在输入中的位置如何，都能被相同的卷积核检测到&lt;/li>
+&lt;/ol>
+&lt;p>这些特性使CNN在图像识别、物体检测等任务中表现出色，成为计算机视觉领域的基础模型。&lt;/p>
+&lt;p>虽然话是这么说, 但我感觉卷积和CNN的关系就和老婆饼跟老婆的关系差不多&amp;hellip;&lt;/p>
+&lt;h2 id="卷积的深层洞见">卷积的深层洞见
+&lt;/h2>&lt;p>除了前文讨论的内容，卷积还有一些更深层次的洞见值得探索：&lt;/p>
+&lt;h3 id="对偶性与不确定性">对偶性与不确定性
+&lt;/h3>&lt;p>卷积与傅里叶变换之间存在着深刻的对偶关系，这种关系揭示了信号在时域和频域的基本约束：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>时域展宽，频域压缩&lt;/strong>：当我们对信号进行卷积（如用高斯函数平滑）时，时域上的信号变得更宽，而其频谱则变得更窄。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>不确定性原理&lt;/strong>：这种对偶性直接导致了信号处理中的不确定性原理——信号不可能同时在时域和频域上无限集中，这与量子力学中的海森堡不确定性原理有着相似的数学形式。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="卷积定理的普适性">卷积定理的普适性
+&lt;/h3>&lt;p>卷积定理（时域卷积等价于频域乘积）不仅适用于傅里叶变换，还适用于许多其他变换：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>拉普拉斯变换&lt;/strong>：时域卷积对应s域乘积&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Z变换&lt;/strong>：序列卷积对应z域乘积&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>小波变换&lt;/strong>：在某些条件下也满足类似性质&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>这种普适性表明卷积作为一种操作，在数学上具有深刻的内在结构。&lt;/p>
+&lt;h3 id="群论视角">群论视角
+&lt;/h3>&lt;p>从抽象代数角度看，卷积可以被理解为群上的一种自然运算：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>群卷积&lt;/strong>：在群G上定义的函数f和g的卷积为：$(f * g)(x) = \int_G f(y)g(y^{-1}x)dy$&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>不变性&lt;/strong>：卷积天然保持群的作用不变性，这解释了为什么卷积在处理具有平移、旋转等对称性的数据时如此有效。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>群等变卷积网络&lt;/strong>：这一洞见已经推动了深度学习中群等变卷积网络的发展，使网络能够处理具有各种对称性的数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="信息论解释">信息论解释
+&lt;/h3>&lt;p>从信息论角度，卷积可以被理解为：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>信息融合&lt;/strong>：卷积是一种最优的信息融合方式，在高斯噪声假设下，它等价于贝叶斯推断。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>最大熵原理&lt;/strong>：在某些约束条件下，卷积产生的分布具有最大熵，这解释了为什么多次卷积会趋向正态分布。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="卷积定理时域卷积与频域乘积的对应关系">卷积定理：时域卷积与频域乘积的对应关系
+&lt;/h3>&lt;p>让我们来探讨一个卷积的核心性质——卷积定理。这个定理告诉我们：&lt;strong>时域中的卷积等价于频域中的乘积&lt;/strong>。这听起来很神奇，但背后有着深刻的数学原理。&lt;/p>
+&lt;p>从数学表达上看，卷积定理可以表示为：&lt;/p>
+$$\mathcal{F}\{f * g\} = \mathcal{F}\{f\} \cdot \mathcal{F}\{g\}$$&lt;p>其中 $\mathcal{F}$ 表示傅里叶变换，$f * g$ 表示 $f$ 和 $g$ 的卷积。&lt;/p>
+&lt;h4 id="为什么会这样">为什么会这样？
+&lt;/h4>&lt;p>这种对应关系的本质可以从卷积的定义出发来理解。回顾卷积的定义：&lt;/p>
+$$y(t) = \int_{-\infty}^{\infty} f(\tau)g(t-\tau)d\tau$$&lt;p>当我们对这个式子进行傅里叶变换时，会发生什么？&lt;/p>
+&lt;p>傅里叶变换将时域信号分解为不同频率的正弦波的叠加。对于每个频率分量 $\omega$，卷积的傅里叶变换可以写为：&lt;/p>
+$$\mathcal{F}\{f * g\}(\omega) = \int_{-\infty}^{\infty} \left( \int_{-\infty}^{\infty} f(\tau)g(t-\tau)d\tau \right) e^{-j\omega t} dt$$&lt;p>通过变换顺序和变量替换，可以证明这等价于 $F(\omega) \cdot G(\omega)$，其中 $F(\omega)$ 和 $G(\omega)$ 分别是 $f(t)$ 和 $g(t)$ 的傅里叶变换。&lt;/p>
+&lt;h4 id="从滑动加权平均的角度理解">从滑动加权平均的角度理解
+&lt;/h4>&lt;p>还记得我们之前讨论的&amp;quot;滑动加权平均&amp;quot;视角吗？卷积本质上是一种滑动窗口操作，窗口形状保持不变，只是位置在变化。&lt;/p>
+&lt;p>在频域中，这种&amp;quot;滑动不变性&amp;quot;表现为什么呢？答案是：&lt;strong>频率分量的独立调制&lt;/strong>。&lt;/p>
+&lt;p>每个频率分量都被独立地调整幅度和相位，而不会与其他频率产生&amp;quot;混淆&amp;quot;。这正是乘法的特性！对于频谱 $F(\omega)$ 中的每个分量，我们只需将其乘以 $G(\omega)$ 中对应频率的值即可。&lt;/p>
+&lt;h4 id="齐次性的体现">齐次性的体现
+&lt;/h4>&lt;p>这种对应关系也是卷积齐次性的一种体现。我们之前讨论过，卷积中的齐次关系 $\tau + (t - \tau) = t$ 体现了时间不变性。在频域中，这种不变性转化为频率分量的独立处理。&lt;/p>
+&lt;p>时域中的&amp;quot;滑动不变性&amp;quot;意味着系统对输入的响应只取决于输入与当前时刻的时间差，而不依赖于绝对时间。这种性质在频域中自然对应为各频率分量的独立调制。&lt;/p>
+&lt;h4 id="计算效率的提升">计算效率的提升
+&lt;/h4>&lt;p>这种对偶性不仅具有理论意义，还带来了实际的计算优势。对于长序列的卷积，直接计算的复杂度是 $O(n^2)$，而利用快速傅里叶变换 (FFT)，我们可以将复杂度降低到 $O(n\log n)$：&lt;/p>
+&lt;ol>
+&lt;li>对输入信号进行 FFT&lt;/li>
+&lt;li>在频域中相乘&lt;/li>
+&lt;li>进行逆 FFT 得到结果&lt;/li>
+&lt;/ol>
+&lt;p>这种&amp;quot;变换-乘积-逆变换&amp;quot;的策略大大提高了卷积的计算效率，在信号处理、图像处理等领域有着广泛应用。&lt;/p>
+&lt;p>总的来说，时域卷积等于频域乘积这一性质，揭示了卷积作为一种数学操作的内在优雅性，它将时域中复杂的积分操作转化为频域中简单的乘法，体现了数学中常见的&amp;quot;复杂问题简单化&amp;quot;的美妙转换。&lt;/p>
+&lt;h2 id="总结">总结
+&lt;/h2>&lt;p>卷积本质上是一种时空融合的数学语言，通过&amp;quot;滑动加权平均&amp;quot;将两个函数的全局信息深度融合：在时域体现为系统对&lt;strong>历史输入的累积响应&lt;/strong>，在频域展现为&lt;strong>频率分量的优雅调制&lt;/strong>，在概率论中呈现为&lt;strong>随机涨落的光滑收敛&lt;/strong>，在深度学习中则演化为&lt;strong>特征提取的通用范式&lt;/strong>。这种独特的组合方式——&lt;strong>以函数为权重、以积分为纽带、以对称为灵魂&lt;/strong>——使其成为贯通信号处理、概率论、物理学和人工智能的基础性思维工具，既刻画着自然界的因果律动，也驱动着现代科技的智能演进。(本段总结由 Deepseek 生成)&lt;/p></description></item></channel></rss>
