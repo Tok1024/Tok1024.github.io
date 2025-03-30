@@ -35,7 +35,7 @@ categories: ['Math']
 
 ![卷积-image-3](images/卷积-image-3.png)
 
-首先需要确定的是: **卷积中的自变量是 s, 而非 x**, 观察公式
+首先需要确定的是: **卷积中的自变量是 t, 而非 x**, 观察公式
 
 $$y(t) = \int_{-\infty}^{\infty} f(\tau)g(t-\tau)d\tau$$
 
